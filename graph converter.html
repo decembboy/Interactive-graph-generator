@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Data Plotter (Dark Mode with Glow)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .container {
+            margin: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        select, input[type="file"] {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border: 1px solid #333;
+        }
+        select:focus, input[type="file"]:focus {
+            outline: none;
+            border-color: #00ffcc;
+        }
+        #graph {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- File Upload for CSV -->
+        <label for="fileUpload">Upload CSV File:</label>
+        <input type="file" id="fileUpload" accept=".csv">
+
+        <!-- Dropdown for Data Selection -->
+        <label for="data">Select Data:</label>
+        <select id="data"></select>
+
+        <!-- Placeholder for the graph -->
+        <div id="graph"></div>
+    </div>
+
+    <!-- Include Plotly.js Library -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <script>
+        const fileUpload = document.getElementById('fileUpload');
+        const dataDropdown = document.getElementById('data');
+        const graphDiv = document.getElementById('graph');
+        let parsedData = {};
+
+        // Function to parse CSV file
+        function parseCSV(file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const text = event.target.result;
+                const rows = text.split('\n').map(row => row.split(','));
+
+                // Assuming the first row contains headers
+                const headers = rows[0];
+                const data = {};
+
+                headers.forEach((header, index) => {
+                    data[header] = rows.slice(1).map(row => parseFloat(row[index]));
+                });
+
+                parsedData = data;
+                populateDropdown(headers);
+            };
+            reader.readAsText(file);
+        }
+
+        // Function to populate dropdown with data column options
+        function populateDropdown(headers) {
+            dataDropdown.innerHTML = ''; // Clear previous options
+            headers.forEach(header => {
+                const option = document.createElement('option');
+                option.value = header;
+                option.textContent = header;
+                dataDropdown.appendChild(option);
+            });
+
+            // Automatically plot the first data set after upload
+            plotGraph();
+        }
+
+        // Function to plot the graph with a glowing line
+        function plotGraph() {
+            const selectedData = dataDropdown.value;
+
+            const trace = {
+                x: Array.from({length: parsedData[selectedData].length}, (_, i) => i + 1),
+                y: parsedData[selectedData],
+                type: 'scatter',
+                mode: 'lines',
+                line: {
+                    color: 'green', // Glowing color
+                    width: 1,
+                    shape: 'spline',
+                    dash: 'solid'
+                },
+                hoverlabel: {
+                    bgcolor: '#333',
+                    bordercolor: '#00ffcc',
+                    font: { color: '#fff' }
+                }
+            };
+
+            const layout = {
+                title: {
+                    text: `Plot of ${selectedData}`,
+                    font: {
+                        color: '#ffffff',
+                        size: 24
+                    }
+                },
+                paper_bgcolor: '#121212',
+                plot_bgcolor: '#1e1e1e',
+                xaxis: {
+                    title: 'Index',
+                    color: '#ffffff',
+                    gridcolor: '#333',
+                    zerolinecolor: '#555'
+                },
+                yaxis: {
+                    title: selectedData,
+                    color: '#ffffff',
+                    gridcolor: '#333',
+                    zerolinecolor: '#555'
+                }
+            };
+
+            Plotly.newPlot(graphDiv, [trace], layout);
+        }
+
+        // Add event listener to file upload
+        fileUpload.addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                parseCSV(file);
+            }
+        });
+
+        // Add event listener to dropdown
+        dataDropdown.addEventListener('change', plotGraph);
+    </script>
+</body>
+</html>
